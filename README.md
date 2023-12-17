@@ -753,7 +753,8 @@ Tambahkan rules iptables berikut di Web Server yaitu node `SEIN` dan `STARK`:
 
   - Grobe Forest
 
-    - Senin sampai Jumat dari pukul 08:00 hingga 16:00
+    - Senin - Kamis pada jam 12.00 - 13.00
+
       Set date dengan menggunakan syntax berikut:
 
       ```bash
@@ -774,7 +775,8 @@ Tambahkan rules iptables berikut di Web Server yaitu node `SEIN` dan `STARK`:
 
   - Client selain GrobeForest
 
-    - Senin sampai Jumat dari pukul 08:00 hingga 16:00
+    - Senin - Kamis pada jam 12.00 - 13.00
+
       Set date dengan menggunakan syntax berikut:
 
       ```bash
