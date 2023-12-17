@@ -64,11 +64,14 @@ Soal:
 
 10. Karena kepala suku ingin tau paket apa saja yang di-drop, maka di setiap node server dan router ditambahkan logging paket yang di-drop dengan standard syslog level.
 
-
 # Jawaban
 
 ## Setup A-D
+1. Buat topologinya terlebih dahulu di GNS3 dan tentukan subnetnya, berikut merupakan pembagian subnet kelompok kami:
+  ![topologi-subnet](https://github.com/SarahNurhasna/Jarkom-Modul-5-E11-2023/assets/114993457/db7f7ae6-e562-4971-9199-a733320ea053)
 
+2. Tentukan netmask setiap subnetnya berdasarkan jumlah IP yang dibutuhkan.
+![Alt text](image.png)
 ## NO 1
 
 ## NO 2
