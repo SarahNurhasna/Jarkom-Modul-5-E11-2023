@@ -804,3 +804,5 @@ Tambahkan rules iptables berikut di Web Server yaitu node `SEIN` dan `STARK`:
 ## NO 10
 
 # Kendala
+
+- Typo pada saat routing dan setup IP DHCP untuk client
