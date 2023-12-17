@@ -347,7 +347,15 @@ Soal:
       up route add -net 10.42.1.20 netmask 255.255.255.252 gw 10.42.1.6
       ```
 
-6.  Lakukan setup DNS server di node `RICHTER` dengan script berikut.
+6.  Buat iptables di `AURA` yaitu dengan script berikut dan restart node `AURA`:
+
+    ```bash
+    iptables -t nat -A POSTROUTING -o eth0 -j SNAT --to-source 192.168.122.225
+    ```
+
+    Iptables ini sekaligus merupakan jawaban untuk `nomor 1`.
+
+7.  Lakukan setup DNS server di node `RICHTER` dengan script berikut.
 
     ```bash
     # Richter
@@ -370,14 +378,6 @@ Soal:
 
     service bind9 restart
     ```
-
-7.  Buat iptables di `AURA` yaitu dengan script berikut dan restart node `AURA`:
-
-    ```bash
-    iptables -t nat -A POSTROUTING -o eth0 -j SNAT --to-source 192.168.122.225
-    ```
-
-    Iptables ini sekaligus merupakan jawaban untuk `nomor 1`.
 
 8.  Selanjutnya lakukan setup DHCP server di node `REVOLTE` dengan script berikut.
 
