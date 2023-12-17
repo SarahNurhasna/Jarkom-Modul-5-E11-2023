@@ -2,7 +2,6 @@
 auto eth0
 iface eth0 inet dhcp
 hwaddress ether 3a:4c:af:92:6f:3b
-# up iptables -t nat -A POSTROUTING -o eth0 -j SNAT --to-source 192.168.122.225
 
 #A1 --> 10.42.1.0 - 10.42.1.3
 auto eth1
