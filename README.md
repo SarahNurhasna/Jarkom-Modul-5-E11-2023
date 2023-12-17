@@ -725,7 +725,7 @@ Tambahkan rules iptables berikut di Web Server yaitu node `SEIN` dan `STARK`:
   ```bash
   iptables -I INPUT 2 -p tcp --dport 22 -s 10.42.4.0/22 -m time --timestart 11:00 --timestop 13:00 --weekdays Fri -j DROP
   ```
-  Simpan rules di index kedua agar dijalankan sebelum rules yang menerima semua packet di hari Jumat pada jam 11.00 - 13.00 dengan menggunakan `-I INPUT 2` yang artinya sisipkan rule ke index ke-2.
+  Simpan rules di index kedua agar dijalankan sebelum rules yang menerima semua packet di hari Senin sampai Jumat dari pukul 08:00 hingga 16:00 `-I INPUT 2` yang artinya sisipkan rule ke index ke-2.
 
 **Hasil iptables**
 
