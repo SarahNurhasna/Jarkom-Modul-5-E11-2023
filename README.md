@@ -534,35 +534,264 @@ Untuk nomor 1 sudah dilakukan di bagian setup dan dapat disimpan di `/root/.bash
 iptables -t nat -A POSTROUTING -o eth0 -j SNAT --to-source 192.168.122.225
 ```
 
-- TESTING
+**Testing**
 
-  - Restart Client yaitu `TurkRegion`, `GrobeForest`, `SchewerMountain`, `LaubHills`.
+- Restart Client yaitu `TurkRegion`, `GrobeForest`, `SchewerMountain`, `LaubHills`.
 
-  - Lakukan testing di client dengan `ip a` dan `ping google.com`
+- Lakukan testing di client dengan `ip a` dan `ping google.com`
 
-    - TurkRegion
-      ![Alt text](img/testsetup-turk.png)
+  - TurkRegion
+    ![Alt text](img/testsetup-turk.png)
 
-    - GrobeForest
-      ![Alt text](img/testsetup-grobe.png)
+  - GrobeForest
+    ![Alt text](img/testsetup-grobe.png)
 
-    - SchewerMountain
-      ![Alt text](img/testsetup-schwer.png)
+  - SchewerMountain
+    ![Alt text](img/testsetup-schwer.png)
 
-    - LaubHills
-      ![Alt text](img/testsetup-laub.png)
+  - LaubHills
+    ![Alt text](img/testsetup-laub.png)
 
 ## NO 2
 
 > Kalian diminta untuk melakukan drop semua TCP dan UDP kecuali port 8080 pada TCP.
 
+Tambahkan rule iptables berikut pada node `REVOLTE`.
+
+- Untuk menerima packet dari port 8080 dengan TCP
+  ```bash
+  iptables -A INPUT -p tcp --dport 8080 -j ACCEPT
+  ```
+- Untuk melakukan drop semua TCP dan UDP
+  ```bash
+  iptables -A INPUT -p tcp -j DROP
+  iptables -A INPUT -p udp -j DROP
+  ```
+
+**Testing**
+
+Untuk melakukan testing di client perlu melakukan download netcat dengan:
+
+```bash
+echo 'nameserver 192.168.122.1' > /etc/resolv.conf
+apt-get update
+apt install netcat -y
+```
+
+- TCP port 8080
+  ![Alt text](img/no2-tcp8080.png)
+
+- UDP port 8080
+  ![Alt text](img/no2-udp.png)
+
+- TCP port 9090
+  ![Alt text](img/no2-tcp9090.png)
+
 ## NO 3
+
+> Kepala Suku North Area meminta kalian untuk membatasi DHCP dan DNS Server hanya dapat dilakukan ping oleh maksimal 3 device secara bersamaan, selebihnya akan di drop.
+
+Tambahkan rule iptables berikut pada node `REVOLTE`.
+
+- Untuk memberikan batasan koneksi
+
+  ```bash
+  iptables -I INPUT -p icmp -m connlimit --connlimit-above 3 --connlimit-mask 0 -j DROP
+  ```
+
+- Untuk menerima paket yang terkait dengan koneksi yang sudah terbentuk (ESTABLISHED) atau koneksi yang telah terikat (RELATED)
+
+  ```bash
+  iptables -I INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+  ```
+
+**Hasil iptables**
+
+![Alt text](img/no3-iptables.png)
+
+**Testing**
+
+Testing dilakukan di semua client dan lakukan ping ke IP `REVOLTE`
+
+![Alt text](img/no3.png)
 
 ## NO 4
 
+> Lakukan pembatasan sehingga koneksi SSH pada Web Server hanya dapat dilakukan oleh masyarakat yang berada pada GrobeForest.
+
+Tambahkan rules iptables berikut di Web Server yaitu node `SEIN` dan `STARK`:
+
+- Untuk menerima packet dari GrobeForest dengan koneksi SSH
+
+  ```bash
+  iptables -A INPUT -p tcp --dport 22 -s 10.42.4.0/22 -j ACCEPT
+  ```
+
+  Karena IP GrobeForest berubah-ubah dari range `10.42.4.1 - 10.42.7.255`, maka gunakan IP dari subnet A3 (Heiter-Switch3-Sein-Switch3-GrobeForest) agar semua IP yang berada di subnet A3 diterima oleh Web Server.
+
+- Untuk menolak packet selain dari GrobeForest
+  ```bash
+  iptables -A INPUT -p tcp --dport 22 -j DROP
+  ```
+
+**Hasil iptables**
+
+![Alt text](img/no4-iptables.png)
+
+**Testing**
+
+- GrobeForest
+
+  ![Alt text](img/no4-grobe.png)
+
+- Client selain GrobeForest --> ex: SchwerMountain
+
+  ![Alt text](img/no4-selaingrobe.png)
+
 ## NO 5
 
+> Selain itu, akses menuju WebServer hanya diperbolehkan saat jam kerja yaitu Senin-Jumat pada pukul 08.00-16.00.
+
+Untuk menambahkan ketentuan waktu pada soal, kita dapat memperbarui iptables pada nomor sebelumnya dengan syntax berikut:
+
+```bash
+iptables -R INPUT 1 -p tcp --dport 22 -s 10.42.4.0/22 -m time --timestart 08:00 --timestop 16:00 --weekdays Mon,Tue,Wed,Thu,Fri -j ACCEPT
+```
+
+**Penjelasan**:
+
+- `-R INPUT 1` untuk mengganti rule pada indeks pertama dengan rule yang baru
+- Untuk mengecek indeks rule yang ingin diganti dapat menggunakan syntax berikut.
+
+  ```bash
+  iptables -L INPUT --line-numbers
+  ```
+
+- `-m time --timestart 08:00 --timestop 16:00 --weekdays Mon,Tue,Wed,Thu,Fri` untuk menentukan rentang waktu dan hari di mana aturan ini berlaku. Aturan ini membatasi akses pada hari Senin sampai Jumat dari pukul 08:00 hingga 16:00.
+
+**Hasil iptables**
+
+![Alt text](img/no5-iptables.png)
+
+**Testing**
+
+- Sesuai rentang waktu yang dapat diakses
+
+  Set date agar sesuai dengan rentang waktu yang dapat diakses dengan menggunakan syntax berikut:
+
+  ```bash
+  date --set="2023-12-15 10:00:00"
+  ```
+
+  - GrobeForest
+
+    ![Alt text](img/no5-grobeY.png)
+
+  - Client selain GrobeForest
+
+    ![Alt text](img/no5-selainY.png)
+
+- Diluar rentang waktu yang dapat diakses
+
+  Set date agar diluar rentang waktu yang dapat diakses dengan menggunakan syntax berikut:
+
+  ```bash
+  date --set="2023-12-15 22:00:00"
+  ```
+
+  - GrobeForest
+
+    ![Alt text](img/no5-grobeN.png)
+
+  - Client selain GrobeForest
+
+    ![Alt text](img/no5-selainN.png)
+
 ## NO 6
+
+> Lalu, karena ternyata terdapat beberapa waktu di mana network administrator dari WebServer tidak bisa stand by, sehingga perlu ditambahkan rule bahwa akses pada hari Senin - Kamis pada jam 12.00 - 13.00 dilarang (istirahat maksi cuy) dan akses di hari Jumat pada jam 11.00 - 13.00 juga dilarang (maklum, Jumatan rek).
+
+Tambahkan rules iptables berikut di Web Server yaitu node `SEIN` dan `STARK`:
+
+- Rule agar akses pada hari Senin - Kamis pada jam 12.00 - 13.00 dilarang.
+
+  ```bash
+  iptables -I INPUT 1 -p tcp --dport 22 -s 10.42.4.0/22 -m time --timestart 12:00 --timestop 13:00 --weekdays Mon,Tue,Wed,Thu -j DROP
+  ```
+
+  Simpan rules di index pertama agar dijalankan sebelum rules yang menerima semua packet di hari Senin sampai Jumat dari pukul 08:00 hingga 16:00 dengan menggunakan `-I INPUT 1` yang artinya sisipkan rule ke index pertama.
+
+- Rule agar akses di hari Jumat pada jam 11.00 - 13.00 dilarang.
+  ```bash
+  iptables -I INPUT 2 -p tcp --dport 22 -s 10.42.4.0/22 -m time --timestart 11:00 --timestop 13:00 --weekdays Fri -j DROP
+  ```
+  Simpan rules di index kedua agar dijalankan sebelum rules yang menerima semua packet di hari Jumat pada jam 11.00 - 13.00 dengan menggunakan `-I INPUT 2` yang artinya sisipkan rule ke index ke-2.
+
+**Hasil iptables**
+
+![Alt text](img/no6-iptables.png)
+
+**Testing**
+
+- Sesuai rentang waktu yang dapat diakses
+
+  Set date agar sesuai dengan rentang waktu yang dapat diakses dengan menggunakan syntax berikut:
+
+  ```bash
+  date --set="2023-12-15 10:00:00"
+  ```
+
+  - GrobeForest
+
+    ![Alt text](img/no6-grobeY.png)
+
+  - Client selain GrobeForest
+
+    ![Alt text](img/no6-selainY.png)
+
+- Diluar rentang waktu yang dapat diakses
+
+  - Grobe Forest
+
+    - Senin sampai Jumat dari pukul 08:00 hingga 16:00
+      Set date dengan menggunakan syntax berikut:
+
+      ```bash
+      date --set="2023-12-11 12:00:00"
+      ```
+
+      ![Alt text](img/no6-grobeSenin.png)
+
+    - Jumat pada jam 11.00 - 13.00
+
+      Set date dengan menggunakan syntax berikut:
+
+      ```bash
+      date --set="2023-12-15 12:00:00"
+      ```
+
+      ![Alt text](img/no6-grobeJumat.png)
+
+  - Client selain GrobeForest
+
+    - Senin sampai Jumat dari pukul 08:00 hingga 16:00
+      Set date dengan menggunakan syntax berikut:
+
+      ```bash
+      date --set="2023-12-11 12:00:00"
+      ```
+
+      ![Alt text](img/no6-selainSenin.png)
+
+    - Jumat pada jam 11.00 - 13.00
+
+      Set date dengan menggunakan syntax berikut:
+
+      ```bash
+      date --set="2023-12-15 12:00:00"
+      ```
+
+      ![Alt text](img/no6-selainJumat.png)
 
 ## NO 7
 

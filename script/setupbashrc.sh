@@ -9,6 +9,11 @@ apt-get install isc-dhcp-server -y
 
 # cd /root/jawaban
 
+# CLIENT
+echo 'nameserver 192.168.122.1' > /etc/resolv.conf
+apt-get update
+apt install netcat -y
+
 # RICHTER - DNS SERVER
 echo 'nameserver 192.168.122.1' > /etc/resolv.conf
 apt-get update
