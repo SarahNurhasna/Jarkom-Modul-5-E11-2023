@@ -797,12 +797,122 @@ Tambahkan rules iptables berikut di Web Server yaitu node `SEIN` dan `STARK`:
 
 ## NO 7
 
+> Karena terdapat 2 WebServer, kalian diminta agar setiap client yang mengakses Sein dengan Port 80 akan didistribusikan secara bergantian pada Sein dan Stark secara berurutan dan request dari client yang mengakses Stark dengan port 443 akan didistribusikan secara bergantian pada Sein dan Stark secara berurutan.
+
+- Heiter dan Frieren (Router)
+
+  ```bash
+  iptables -t nat -F
+
+  # Akses ke Sein port 80
+  iptables -A PREROUTING -t nat -p tcp --dport 80 -d 10.42.4.2 -m statistic --mode nth --every 2 --packet 0 -j DNAT --to-destination 10.42.4.2
+  iptables -A PREROUTING -t nat -p tcp --dport 80 -d 10.42.4.2 -j DNAT --to-destination 10.42.1.10
+
+  # Akses ke Stark port 443
+
+  iptables -A PREROUTING -t nat -p tcp --dport 443 -d 10.42.1.10 -m statistic --mode nth --every 2 --packet 0 -j DNAT --to-destination 10.42.4.2
+  iptables -A PREROUTING -t nat -p tcp --dport 443 -d 10.42.1.10 -j DNAT --to-destination 10.42.1.10
+  ```
+
+**Keterangan**
+
+Akses ke Sein port 80:
+
+- Baris pertama: `iptables -A PREROUTING -t nat -p tcp --dport 80 -d 10.42.4.2 -m statistic --mode nth --every 2 --packet 0 -j DNAT --to-destination 10.42.4.2` Jika paket yang menuju ke port 80 pada alamat tujuan 10.42.4.2 adalah paket yang ke-2 (berdasarkan mode nth), maka paket tersebut diarahkan (DNAT) ke alamat tujuan 10.42.4.2.
+- Baris kedua: `iptables -A PREROUTING -t nat -p tcp --dport 80 -d 10.42.4.2 -j DNAT --to-destination 10.42.1.10` Untuk paket selain paket ke-2, paket tersebut diarahkan ke alamat tujuan 10.42.1.10.
+
+Akses ke Stark port 443:
+
+- Baris ketiga: `iptables -A PREROUTING -t nat -p tcp --dport 443 -d 10.42.1.10 -m statistic --mode nth --every 2 --packet 0 -j DNAT --to-destination 10.42.4.2` : Jika paket yang menuju ke port 443 pada alamat tujuan 10.42.1.10 adalah paket yang ke-2 (berdasarkan mode nth), maka paket tersebut diarahkan (DNAT) ke alamat tujuan 10.42.4.2.
+- Baris keempat: `iptables -A PREROUTING -t nat -p tcp --dport 443 -d 10.42.1.10 -j DNAT --to-destination 10.42.1.10` Untuk paket selain paket ke-2, paket tersebut diarahkan ke alamat tujuan 10.42.1.10.
+
+**Output :**
+
+[Skenario 1 : Mengakses Sein dengan port 80]
+
+- Menjalankan command `while true; do nc -l -p 80 -c 'echo "Dari Sein"'; done` pada node Sein.
+- Menjalankan command `while true; do nc -l -p 80 -c 'echo "Dari Stark"'; done` pada node Stark.
+- Menjalankan command `nc [IP Sein] 80` pada node LaubHills:
+
+  ![000e36cc-a74f-422c-a245-fbe1c95cffc9](https://github.com/SarahNurhasna/Jarkom-Modul-5-E11-2023/assets/93377643/ee47fd94-9d63-47e4-bed0-278adff275df)
+
+[Skenario 2 : Mengakses Stark dengan port 443]
+
+- Menjalankan command `while true; do nc -l -p 443 -c 'echo "Dari Sein"'; done` pada node Sein.
+- Menjalankan command `while true; do nc -l -p 443 -c 'echo "Dari Stark"'; done` pada node Stark.
+- Menjalankan command `nc [IP Stark] 443` pada node LaubHills:
+
+  ![b773046a-3efc-4041-9222-9b9aa7bdc057](https://github.com/SarahNurhasna/Jarkom-Modul-5-E11-2023/assets/93377643/5a234985-4457-4cf1-9e3f-5ae30d132502)
+
 ## NO 8
 
+> Karena berbeda koalisi politik, maka subnet dengan masyarakat yang berada pada Revolte dilarang keras mengakses WebServer hingga masa pencoblosan pemilu kepala suku 2024 berakhir. Masa pemilu (hingga pemungutan dan penghitungan suara selesai) kepala suku bersamaan dengan masa pemilu Presiden dan Wakil Presiden Indonesia 2024.
+
+- Sein dan Stark (Webserver)
+  ```bash
+  # subnet revolte --> A10
+
+  Revolte_Subnet="10.42.1.20/30"
+
+  Pemilu_Start=$(date -d "2023-10-19T00:00" +"%Y-%m-%dT%H:%M")
+
+  Pemilu_End=$(date -d "2024-02-15T00:00" +"%Y-%m-%dT%H:%M")
+
+  iptables -A INPUT -p tcp -s $Revolte_Subnet --dport 80 -m time --datestart "$Pemilu_Start" --datestop "$Pemilu_End" -j DROP
+  ```
+
+**Keterangan**
+
+1. `Revolte_Subnet="10.42.1.20/30"` = Alamat untuk yang dilarang akses
+2. `Pemilu_Start` dan `Pemilu_End` = tanggal dan waktu mulai dan selesai pemilu
+3. `iptables` = untuk mengatur aturan pada firewall server 
+    - hanya berlaku untuk komputer di alamat `Revolte_Subnet`
+    - Hanya untuk permintaan ke port 80, yang umum digunakan untuk situs web
+    - aktif mulai dari `Pemilu_Start` sampai `Pemilu_End`
+    - Jika ada komputer dari `Revolte_Subnet` yang coba mengakses situs web dalam waktu tersebut, server akan mengabaikannya (DROP)
+
+**Output :**
+
+![a4e2f134-f9b5-49a4-9eaa-3ded44259d92](https://github.com/SarahNurhasna/Jarkom-Modul-5-E11-2023/assets/93377643/e924d1dc-09ac-4d81-93a9-be9f42d3ccd7)
+
+![bc09775e-3a5c-400a-96ba-eeebf817bb32](https://github.com/SarahNurhasna/Jarkom-Modul-5-E11-2023/assets/93377643/62f409ed-ccda-4a6a-9649-1abe33383531)
+
+Dapat dilihat bahwa Revolte fail saat mengakses webserver sedangkan GrobeForest berhasil disaat tanggal telah diatur berada pada masa pemilu.
+
 ## NO 9
+
+> Sadar akan adanya potensial saling serang antar kubu politik, maka WebServer harus dapat secara otomatis memblokir  alamat IP yang melakukan scanning port dalam jumlah banyak (maksimal 20 scan port) di dalam selang waktu 10 menit. 
+(clue: test dengan nmap)
+
+- Sein dan Stark (Webserver)
+  ```bash
+  # sein stark
+
+  iptables -N scan_port
+
+  iptables -A INPUT -m recent --name scan_port --update --seconds 600 --hitcount 20 -j DROP
+
+  iptables -A FORWARD -m recent --name scan_port --update --seconds 600 --hitcount 20 -j DROP
+
+  iptables -A INPUT -m recent --name scan_port --set -j ACCEPT
+
+  iptables -A FORWARD -m recent --name scan_port --set -j ACCEPT
+  ```
+  
+**Keterangan**
+
+**Output :**
+
+- Testing ping di LaubHills = `ping 10.42.1.10`
+
+  ![2e3e47cc-2b7b-4e38-8993-fcdd254cf865](https://github.com/SarahNurhasna/Jarkom-Modul-5-E11-2023/assets/93377643/9a45cd96-e016-4ef3-addb-67fe3ec97ec2)
+
+  Melakukan ping ke ip web server, setelah ping ke-20, ping ke-21 dan seterusnya tidak berhasil (ping tidak berlanjut).
 
 ## NO 10
 
 # Kendala
 
 - Typo pada saat routing dan setup IP DHCP untuk client
+- Gagal routing ulang karena terdapat step yang ke-skip
+- GNS3 sering rusak, akhirnya 3 kali buat GNS3 baru
