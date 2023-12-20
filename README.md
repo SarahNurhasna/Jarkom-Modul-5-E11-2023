@@ -911,6 +911,56 @@ Dapat dilihat bahwa Revolte fail saat mengakses webserver sedangkan GrobeForest 
 
 ## NO 10
 
+> Karena kepala suku ingin tau paket apa saja yang di-drop, maka di setiap node server dan router ditambahkan logging paket yang di-drop dengan standard syslog level. 
+
+- Sein dan Stark (Webserver)
+```bash
+iptables -I INPUT -m recent --name portscan --update --seconds 600 --hitcount 20 -j LOG --log-prefix "Portscan detected: " --log-level 4
+
+iptables -I FORWARD -m recent --name portscan --update --seconds 600 --hitcount 20 -j LOG --log-prefix "Portscan detected: " --log-level 4
+```
+
+- Tambahkan `kernel.warning                  -/var/log/iptables.log` di `etc/rsyslog.d/50-default.conf` --> `nano /etc/rsyslog.d/50-default.conf`
+  ```bash
+  #
+  # First some standard log files.  Log by facility.
+  #
+  auth,authpriv.*                 /var/log/auth.log
+  *.*;auth,authpriv.none          -/var/log/syslog
+  #cron.*                         /var/log/cron.log
+  #daemon.*                       -/var/log/daemon.log
+  kern.*                          -/var/log/kern.log
+  kernel.warning                  -/var/log/iptables.log
+  #lpr.*                          -/var/log/lpr.log
+  mail.*                          -/var/log/mail.log
+  #user.*                         -/var/log/user.log
+
+  #
+  # Logging for the mail system.  Split it up so that
+  # it is easy to write scripts to parse these files.
+  #
+  #mail.info                      -/var/log/mail.info
+  #mail.warn                      -/var/log/mail.warn
+  mail.err                        /var/log/mail.err
+  ```
+
+- `touch /var/log/iptables.log`
+- `/etc/init.d/rsyslog restart`
+
+**Keterangan:**
+
+1. `iptables -I INPUT -m recent --name portscan --update --seconds 600 --hitcount 20 -j LOG --log-prefix "Portscan detected: " --log-level 4` = mencatat upaya scanning yang ditujukan langsung ke server. Tambahkan teks "Portscan detected: " di awal log untuk memudahkan identifikasi. Tetapkan level log ke 4, yang sesuai dengan level 'warning'.
+2. `iptables -I FORWARD -m recent --name portscan --update --seconds 600 --hitcount 20 -j LOG --log-prefix "Portscan detected: " --log-level 4` = sama seperti poin pertama tetapi syntax ini adalah untuk mencatat upaya scanning yang melewati server (misalnya, server sebagai router).
+3. Modifikasi File Konfigurasi rsyslog = Menambahkan `kernel.warning -/var/log/iptables.log` supaya semua pesan log dengan level 'warning' dari kernel (yang mencakup pesan iptables untuk port scanning) ditulis ke file `/var/log/iptables.log`
+4. Membuat file log baru yang bernama iptables.log jika belum ada menggunakan `touch /var/log/iptables.log`
+5. Me-restart layanan rsyslog agar perubahan konfigurasi yang baru ditambahkan diterapkan menggunakan `/etc/init.d/rsyslog restart`
+
+**Testing:**
+
+- Melakukan testing dengan iptables -L di webserver untuk melihat logging.
+
+  ![9f2ce5e2-62b0-4ccb-a0e8-355bf278a790](https://github.com/SarahNurhasna/Jarkom-Modul-5-E11-2023/assets/93377643/0ff50956-3c1f-4f97-8c11-32b0a78846c9)
+  
 # Kendala
 
 - Typo pada saat routing dan setup IP DHCP untuk client
